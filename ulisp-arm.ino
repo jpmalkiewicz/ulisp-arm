@@ -123,7 +123,7 @@ typedef void (*pfun_t)(char);
 
 #if defined(ARDUINO_SAMD_ZERO)
   #define serial1support
-  #define WORKSPACESIZE 3072-SDSIZE       /* Cells (8*bytes) */
+  #define WORKSPACESIZE (3072-SDSIZE)     /* Cells (8*bytes) */
   #define SYMBOLTABLESIZE 512             /* Bytes */
   #define SDCARD_SS_PIN 10
   uint8_t _end;
@@ -132,40 +132,40 @@ typedef void (*pfun_t)(char);
   #define serial1support
   #define serial2support
   #define serial3support
-  #define WORKSPACESIZE 10240-SDSIZE      /* Cells (8*bytes) */
+  #define WORKSPACESIZE (10240-SDSIZE)    /* Cells (8*bytes) */
   #define SYMBOLTABLESIZE 512             /* Bytes */
   #define SDCARD_SS_PIN 10
   extern uint8_t _end;
 
 #elif defined(ARDUINO_SAMD_MKRZERO)
   #define serial1support
-  #define WORKSPACESIZE 3072-SDSIZE       /* Cells (8*bytes) */
+  #define WORKSPACESIZE (3072-SDSIZE)     /* Cells (8*bytes) */
   #define SYMBOLTABLESIZE 512             /* Bytes */
   uint8_t _end;
 
 #elif defined(ARDUINO_METRO_M4)
   #define serial1support
-  #define WORKSPACESIZE 20480-SDSIZE      /* Cells (8*bytes) */
+  #define WORKSPACESIZE (20480-SDSIZE)    /* Cells (8*bytes) */
   #define FLASHSIZE 65536                 /* Bytes */
   #define SYMBOLTABLESIZE 1024            /* Bytes */
   uint8_t _end;
 
 #elif defined(ARDUINO_ITSYBITSY_M4)
   #define serial1support
-  #define WORKSPACESIZE 20480-SDSIZE      /* Cells (8*bytes) */
+  #define WORKSPACESIZE (20480-SDSIZE)    /* Cells (8*bytes) */
   #define FLASHSIZE 65536                 /* Bytes */
   #define SYMBOLTABLESIZE 1024            /* Bytes */
   uint8_t _end;
 
 #elif defined(ARDUINO_FEATHER_M4)
   #define serial1support
-  #define WORKSPACESIZE 20480-SDSIZE      /* Cells (8*bytes) */
+  #define WORKSPACESIZE (20480-SDSIZE)    /* Cells (8*bytes) */
   #define FLASHSIZE 65536                 /* Bytes */
   #define SYMBOLTABLESIZE 1024            /* Bytes */
   uint8_t _end;
 
 #elif defined(ARDUINO_BBC_MICROBIT)
-  #define WORKSPACESIZE 1280              /* Cells (8*bytes) */
+  #define WORKSPACESIZE (1280)            /* Cells (8*bytes) */
   #define SYMBOLTABLESIZE 512             /* Bytes */
   uint8_t _end;
 

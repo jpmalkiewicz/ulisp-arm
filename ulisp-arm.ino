@@ -169,6 +169,11 @@ typedef void (*pfun_t)(char);
   #define SYMBOLTABLESIZE 512             /* Bytes */
   uint8_t _end;
 
+#elif defined(ARDUINO_MAPLE_MINI)
+  #define WORKSPACESIZE (1024)            /* Cells (8*bytes) */
+  #define SYMBOLTABLESIZE 1024            /* Bytes */
+  uint8_t _end;
+
 #endif
 
 object Workspace[WORKSPACESIZE] WORDALIGNED;
@@ -1318,6 +1323,8 @@ void checkanalogread (int pin) {
   if (!(pin>=14 && pin<=19)) error(PSTR("'analogread' invalid pin"));
 #elif defined(ARDUINO_BBC_MICROBIT)
   if (!((pin>=0 && pin<=4) || pin==10)) error(PSTR("'analogread' invalid pin"));
+#elif defined(ARDUINO_MAPLE_MINI)
+  if (!(pin>=3 && pin<=11)) error(PSTR("'analogread' invalid pin"));
 #endif
 }
 
@@ -1336,6 +1343,8 @@ void checkanalogwrite (int pin) {
   if (!(pin==0 || pin==1 || (pin>=4 && pin<=6) || (pin>=9 && pin<=13) || pin==14 || pin==15 || pin==17 || pin==21 || pin==22)) error(PSTR("'analogwrite' invalid pin"));
 #elif defined(ARDUINO_BBC_MICROBIT)
   if (!(pin>=0 && pin<=2)) error(PSTR("'analogwrite' invalid pin"));
+#elif defined(ARDUINO_MAPLE_MINI)
+  if (!((pin>=3 && pin<=5) || (pin>=8 && pin<=11) || pin==15 || pin==16 || (pin>=25 && pin<=27)))  error(PSTR("'analogwrite' invalid pin"));
 #endif
 }
 

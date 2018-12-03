@@ -11,6 +11,7 @@
 #define serialmonitor
 // #define printgcs
 // #define sdcardsupport
+#define i2csupport
 // #define lisplibrary
 
 // Includes
@@ -18,7 +19,9 @@
 // #include "LispLibrary.h"
 #include <setjmp.h>
 #include <SPI.h>
+#if defined(i2csupport)
 #include <Wire.h>
+#endif // i2csupport
 #include <limits.h>
 
 #if defined(sdcardsupport)
@@ -177,7 +180,9 @@ jmp_buf exception;
 unsigned int Freespace = 0;
 object *Freelist;
 char *SymbolTop = SymbolTable;
+#if defined(i2csupport)
 unsigned int I2CCount;
+#endif /* i2csupport */
 unsigned int TraceFn[TRACEMAX];
 unsigned int TraceDepth[TRACEMAX];
 
@@ -1058,6 +1063,7 @@ inline object *cdrx (object *arg) {
   return cdr(arg);
 }
 
+#if defined(i2csupport)
 // I2C interface
 
 void I2Cinit(bool enablePullup) {
@@ -1089,6 +1095,7 @@ bool I2Crestart(uint8_t address, uint8_t read) {
 void I2Cstop(uint8_t read) {
   if (read == 0) Wire.endTransmission(); // Check for error?
 }
+#endif // i2csupport
 
 // Streams
 
@@ -1198,9 +1205,11 @@ gfun_t gstreamfun (object *args) {
     streamtype = stream>>8; address = stream & 0xFF;
   }
   switch(streamtype) {
+#if defined(i2csupport)
     case I2CSTREAM:
       gfun = (gfun_t)I2Cread;
       break;
+#endif // i2csupport
     case SPISTREAM:
       gfun = spiread;
       break;
@@ -1270,8 +1279,10 @@ pfun_t pstreamfun (object *args) {
     streamtype = stream>>8; address = stream & 0xFF;
   }
   switch (streamtype) {
+#if defined(i2csupport)
     case I2CSTREAM: pfun = (pfun_t)I2Cwrite;
       break;
+#endif // i2csupport
     case SPISTREAM:
       pfun = spiwrite;
       break;
@@ -1670,6 +1681,7 @@ object *sp_withserial (object *args, object *env) {
 }
 
 object *sp_withi2c (object *args, object *env) {
+#if defined(i2csupport)
   object *params = first(args);
   object *var = first(params);
   int address = integer(eval(second(params), env));
@@ -1688,6 +1700,11 @@ object *sp_withi2c (object *args, object *env) {
   object *result = eval(tf_progn(forms,env), env);
   I2Cstop(read);
   return result;
+#else // i2csupport
+  (void) args, (void) env;
+  error(PSTR("with-i2c not supported"));
+  return nil;
+#endif // i2csupport
 }
 
 object *sp_withspi (object *args, object *env) {
@@ -3017,6 +3034,7 @@ object *fn_writeline (object *args, object *env) {
 }
 
 object *fn_restarti2c (object *args, object *env) {
+#if defined(i2csupport)
   (void) env;
   int stream = first(args)->integer;
   args = cdr(args);
@@ -3030,6 +3048,11 @@ object *fn_restarti2c (object *args, object *env) {
   int address = stream & 0xFF;
   if (stream>>8 != I2CSTREAM) error(PSTR("'restart' not i2c"));
   return I2Crestart(address, read) ? tee : nil;
+#else // i2csupport
+  (void) env;
+  error(PSTR("restart-i2c not supported"));
+  return nil;
+#endif // i2csupport
 }
 
 object *fn_gc (object *obj, object *env) {
@@ -3993,9 +4016,11 @@ void printobject (object *form, pfun_t pfun){
       case SPISTREAM:
         pfstring(PSTR("spi"), pfun);
         break;
+#if defined(i2csupport)
       case I2CSTREAM:
         pfstring(PSTR("i2c"), pfun);
         break;
+#endif // i2csupport
       case SDSTREAM:
         pfstring(PSTR("sd"), pfun);
         break;

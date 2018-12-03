@@ -14,6 +14,10 @@
 #define i2csupport
 // #define lisplibrary
 
+#if defined(ARDUINO_STM32DiscoveryF407)
+#undef i2csupport
+#endif // ARDUINO_STM32DiscoveryF407
+
 // Includes
 
 // #include "LispLibrary.h"
@@ -171,6 +175,14 @@ typedef void (*pfun_t)(char);
 
 #elif defined(ARDUINO_MAPLE_MINI)
   #define WORKSPACESIZE (1024)            /* Cells (8*bytes) */
+  #define SYMBOLTABLESIZE 1024            /* Bytes */
+  uint8_t _end;
+
+#elif defined(ARDUINO_STM32DiscoveryF407)
+  #if defined(SERIAL_USB)
+  #define serial1support
+  #endif
+  #define WORKSPACESIZE (10240)           /* Cells (8*bytes) */
   #define SYMBOLTABLESIZE 1024            /* Bytes */
   uint8_t _end;
 
@@ -1325,6 +1337,8 @@ void checkanalogread (int pin) {
   if (!((pin>=0 && pin<=4) || pin==10)) error(PSTR("'analogread' invalid pin"));
 #elif defined(ARDUINO_MAPLE_MINI)
   if (!(pin>=3 && pin<=11)) error(PSTR("'analogread' invalid pin"));
+#elif defined(ARDUINO_STM32DiscoveryF407)
+  if (!((pin>=0 && pin<=7) || pin==16 || pin==17 || (pin>=32 && pin<=37))) error(PSTR("'analogread' invalid pin"));
 #endif
 }
 
@@ -1345,6 +1359,8 @@ void checkanalogwrite (int pin) {
   if (!(pin>=0 && pin<=2)) error(PSTR("'analogwrite' invalid pin"));
 #elif defined(ARDUINO_MAPLE_MINI)
   if (!((pin>=3 && pin<=5) || (pin>=8 && pin<=11) || pin==15 || pin==16 || (pin>=25 && pin<=27)))  error(PSTR("'analogwrite' invalid pin"));
+#elif defined(ARDUINO_STM32DiscoveryF407)
+  if (!((pin>=0 && pin<=3) || (pin>=15 && pin<=17) || (pin>=19 && pin<=21) || pin==38 || pin==39 || pin==49 || pin==41 || (pin>=60 && pin<=63) || pin==73 || pin==75 || pin==77 || pin==78))  error(PSTR("'analogwrite' invalid pin"));
 #endif
 }
 

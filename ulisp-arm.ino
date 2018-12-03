@@ -119,35 +119,43 @@ typedef void (*pfun_t)(char);
 #define BUFFERSIZE 34  // Number of bits+2
 
 #if defined(ARDUINO_SAMD_ZERO)
+  #define serial1support
   #define WORKSPACESIZE 3072-SDSIZE       /* Cells (8*bytes) */
   #define SYMBOLTABLESIZE 512             /* Bytes */
   #define SDCARD_SS_PIN 10
   uint8_t _end;
 
 #elif defined(ARDUINO_SAM_DUE)
+  #define serial1support
+  #define serial2support
+  #define serial3support
   #define WORKSPACESIZE 10240-SDSIZE      /* Cells (8*bytes) */
   #define SYMBOLTABLESIZE 512             /* Bytes */
   #define SDCARD_SS_PIN 10
   extern uint8_t _end;
 
 #elif defined(ARDUINO_SAMD_MKRZERO)
+  #define serial1support
   #define WORKSPACESIZE 3072-SDSIZE       /* Cells (8*bytes) */
   #define SYMBOLTABLESIZE 512             /* Bytes */
   uint8_t _end;
 
 #elif defined(ARDUINO_METRO_M4)
+  #define serial1support
   #define WORKSPACESIZE 20480-SDSIZE      /* Cells (8*bytes) */
   #define FLASHSIZE 65536                 /* Bytes */
   #define SYMBOLTABLESIZE 1024            /* Bytes */
   uint8_t _end;
 
 #elif defined(ARDUINO_ITSYBITSY_M4)
+  #define serial1support
   #define WORKSPACESIZE 20480-SDSIZE      /* Cells (8*bytes) */
   #define FLASHSIZE 65536                 /* Bytes */
   #define SYMBOLTABLESIZE 1024            /* Bytes */
   uint8_t _end;
 
 #elif defined(ARDUINO_FEATHER_M4)
+  #define serial1support
   #define WORKSPACESIZE 20480-SDSIZE      /* Cells (8*bytes) */
   #define FLASHSIZE 65536                 /* Bytes */
   #define SYMBOLTABLESIZE 1024            /* Bytes */
@@ -1085,13 +1093,15 @@ void I2Cstop(uint8_t read) {
 // Streams
 
 inline int spiread () { return SPI.transfer(0); }
-#if defined(ARDUINO_SAMD_ZERO) || defined(ARDUINO_SAMD_MKRZERO) || defined(ARDUINO_METRO_M4) || defined(ARDUINO_ITSYBITSY_M4) || defined(ARDUINO_FEATHER_M4)
+#if defined(serial1support)
 inline int serial1read () { while (!Serial1.available()) testescape(); return Serial1.read(); }
-#elif defined(ARDUINO_SAM_DUE)
-inline int serial1read () { while (!Serial1.available()) testescape(); return Serial1.read(); }
+#endif // serial1support
+#if defined(serial2support)
 inline int serial2read () { while (!Serial2.available()) testescape(); return Serial2.read(); }
+#endif // serial2support
+#if defined(serial3support)
 inline int serial3read () { while (!Serial3.available()) testescape(); return Serial3.read(); }
-#endif
+#endif // serial3support
 #if defined(sdcardsupport)
 File SDpfile, SDgfile;
 inline int SDread () {
@@ -1105,25 +1115,78 @@ inline int SDread () {
 #endif
 
 void serialbegin (int address, int baud) {
-  #if defined(ARDUINO_SAMD_ZERO) || defined(ARDUINO_SAMD_MKRZERO) || defined(ARDUINO_METRO_M4) || defined(ARDUINO_ITSYBITSY_M4) || defined(ARDUINO_FEATHER_M4)
-  if (address == 1) Serial1.begin((long)baud*100);
-  else error(PSTR("'with-serial' port not supported"));
-  #elif defined(ARDUINO_SAM_DUE)
-  if (address == 1) Serial1.begin((long)baud*100);
-  else if (address == 2) Serial2.begin((long)baud*100);
-  else if (address == 3) Serial3.begin((long)baud*100);
-  else error(PSTR("'with-serial' port not supported"));
-  #endif
+  switch (address) {
+#if defined(serial1support)
+    case 1:
+      Serial1.begin((long)baud*100);
+      break;
+#endif // serial1support
+#if defined(serial2support)
+    case 2:
+      Serial2.begin((long)baud*100);
+      break;
+#endif // serial2support
+#if defined(serial3support)
+    case 3:
+      Serial3.begin((long)baud*100);
+      break;
+#endif // serial3support
+    default:
+      error(PSTR("'with-serial' port not supported"));
+      break;
+  }
 }
 
 void serialend (int address) {
-  #if defined(ARDUINO_SAMD_ZERO) || defined(ARDUINO_SAMD_MKRZERO) || defined(ARDUINO_METRO_M4) || defined(ARDUINO_ITSYBITSY_M4) || defined(ARDUINO_FEATHER_M4)
-  if (address == 1) {Serial1.flush(); Serial1.end(); }
-  #elif defined(ARDUINO_SAM_DUE)
-  if (address == 1) {Serial1.flush(); Serial1.end(); }
-  else if (address == 2) {Serial2.flush(); Serial2.end(); }
-  else if (address == 3) {Serial3.flush(); Serial3.end(); }
-  #endif
+  switch (address) {
+#if defined(serial1support)
+    case 1:
+      Serial1.flush();
+      Serial1.end();
+      break;
+#endif // serial1support
+#if defined(serial2support)
+    case 2:
+      Serial2.flush();
+      Serial2.end();
+      break;
+#endif // serial2support
+#if defined(serial3support)
+    case 3:
+      Serial3.flush();
+      Serial3.end();
+      break;
+#endif // serial3support
+    default:
+      break;
+  }
+}
+
+static gfun_t gstreamfun_serial(gfun_t gfun, int address)
+{
+  switch (address) {
+    case 0:
+      gfun = gserial;
+      break;
+#if defined(serial1support)
+    case 1:
+      gfun = serial1read;
+#endif // serial1support
+#if defined(serial2support)
+    case 2:
+      gfun = serial2read;
+      break;
+#endif // serial2support
+#if defined(serial3support)
+    case 3:
+      gfun = serial3read;
+      break;
+#endif // serial2support
+    default:
+      error(PSTR("Unknown stream type"));
+      break;
+  }
+  return gfun;
 }
 
 gfun_t gstreamfun (object *args) {
@@ -1134,28 +1197,69 @@ gfun_t gstreamfun (object *args) {
     int stream = istream(first(args));
     streamtype = stream>>8; address = stream & 0xFF;
   }
-  if (streamtype == I2CSTREAM) gfun = (gfun_t)I2Cread;
-  else if (streamtype == SPISTREAM) gfun = spiread;
-  else if (streamtype == SERIALSTREAM) {
-    if (address == 0) gfun = gserial;
-    #if !defined(ARDUINO_BBC_MICROBIT)
-    else if (address == 1) gfun = serial1read;
-    #endif
+  switch(streamtype) {
+    case I2CSTREAM:
+      gfun = (gfun_t)I2Cread;
+      break;
+    case SPISTREAM:
+      gfun = spiread;
+      break;
+    case SERIALSTREAM:
+      gfun = gstreamfun_serial(gfun, address);
+      break;
+#if defined(sdcardsupport)
+    case SDSTREAM:
+      gfun = (gfun_t)SDread;
+      break;
+#endif
+    default:
+      error(PSTR("Unknown stream type"));
+      break;
   }
-  #if defined(sdcardsupport)
-  else if (streamtype == SDSTREAM) gfun = (gfun_t)SDread;
-  #endif
-  else error(PSTR("Unknown stream type"));
   return gfun;
 }
 
 inline void spiwrite (char c) { SPI.transfer(c); }
-#if !defined(ARDUINO_BBC_MICROBIT)
+#if defined(serial1support)
 inline void serial1write (char c) { Serial1.write(c); }
-#endif
+#endif // serial1support
+#if defined(serial2support)
+inline void serial2write (char c) { Serial2.write(c); }
+#endif // serial2support
+#if defined(serial3support)
+inline void serial3write (char c) { Serial3.write(c); }
+#endif // serial3support
 #if defined(sdcardsupport)
 inline void SDwrite (char c) { SDpfile.write(c); }
 #endif
+
+static pfun_t pstreamfun_serial(pfun_t pfun, int address)
+{
+  switch (address) {
+    case 0:
+      pfun = pserial;
+      break;
+#if defined(serial1support)
+    case 1:
+      pfun = serial1write;
+      break;
+#endif // serial1support
+#if defined(serial2support)
+    case 2:
+      pfun = serial2write;
+      break;
+#endif // serial2support
+#if defined(serial3support)
+    case 3:
+      pfun = serial3write;
+      break;
+#endif // serial3support
+    default:
+      error(PSTR("unknown stream type"));
+      break;
+  }
+  return pfun;
+}
 
 pfun_t pstreamfun (object *args) {
   int streamtype = SERIALSTREAM;
@@ -1165,18 +1269,24 @@ pfun_t pstreamfun (object *args) {
     int stream = istream(first(args));
     streamtype = stream>>8; address = stream & 0xFF;
   }
-  if (streamtype == I2CSTREAM) pfun = (pfun_t)I2Cwrite;
-  else if (streamtype == SPISTREAM) pfun = spiwrite;
-  else if (streamtype == SERIALSTREAM) {
-    if (address == 0) pfun = pserial;
-    #if !defined(ARDUINO_BBC_MICROBIT)
-    else if (address == 1) pfun = serial1write;
-    #endif
+  switch (streamtype) {
+    case I2CSTREAM: pfun = (pfun_t)I2Cwrite;
+      break;
+    case SPISTREAM:
+      pfun = spiwrite;
+      break;
+    case SERIALSTREAM:
+      pfun = pstreamfun_serial(pfun, address);
+      break;
+#if defined(sdcardsupport)
+    case SDSTREAM:
+      pfun = (pfun_t)SDwrite;
+      break;
+#endif
+    default:
+      error(PSTR("unknown stream type"));
+      break;
   }
-  #if defined(sdcardsupport)
-  else if (streamtype == SDSTREAM) pfun = (pfun_t)SDwrite;
-  #endif
-  else error(PSTR("unknown stream type"));
   return pfun;
 }
 
@@ -3879,10 +3989,20 @@ void printobject (object *form, pfun_t pfun){
     printstring(form, pfun);
   } else if (streamp(form)) {
     pfstring(PSTR("<"), pfun);
-    if ((form->integer)>>8 == SPISTREAM) pfstring(PSTR("spi"), pfun);
-    else if ((form->integer)>>8 == I2CSTREAM) pfstring(PSTR("i2c"), pfun);
-    else if ((form->integer)>>8 == SDSTREAM) pfstring(PSTR("sd"), pfun);
-    else pfstring(PSTR("serial"), pfun);
+    switch((form->integer)>>8) {
+      case SPISTREAM:
+        pfstring(PSTR("spi"), pfun);
+        break;
+      case I2CSTREAM:
+        pfstring(PSTR("i2c"), pfun);
+        break;
+      case SDSTREAM:
+        pfstring(PSTR("sd"), pfun);
+        break;
+      default:
+        pfstring(PSTR("serial"), pfun);
+        break;
+    }
     pfstring(PSTR("-stream "), pfun);
     pint(form->integer & 0xFF, pfun);
     pfun('>');

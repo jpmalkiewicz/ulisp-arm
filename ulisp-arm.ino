@@ -3737,7 +3737,13 @@ void deletesymbol (symbol_t name) {
 }
 
 void testescape () {
-  if (Serial.read() == '~') error(PSTR("Escape!"));
+  if (Serial.available()) {
+    LastChar = Serial.read();
+  }
+  if (LastChar == '~') {
+    LastChar = 0;
+    error(PSTR("Escape!"));
+  }
 }
 
 // Main evaluator
